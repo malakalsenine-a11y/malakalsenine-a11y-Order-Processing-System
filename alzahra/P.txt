@@ -1,0 +1,122 @@
+CREATE DATABASE LibraryMS;
+use LibraryMS;
+
+CREATE TABLE Library (
+    LID INT IDENTITY(1,1) PRIMARY KEY,
+    LName VARCHAR(100) NOT NULL UNIQUE,
+    Location VARCHAR(150) NOT NULL,
+    ContactNumber VARCHAR(20) NOT NULL,
+    EstablishedYear INT
+	);
+
+CREATE TABLE Member (
+    MID INT IDENTITY(1,1) PRIMARY KEY,
+    FullName VARCHAR(150) NOT NULL,
+    Email VARCHAR(150) NOT NULL UNIQUE,
+    PhoneNumber INT NOT NULL,
+    MembershipStartDate DATE NOT NULL
+);
+
+CREATE TABLE Staff ( 
+SID INT IDENTITY(1,1) PRIMARY KEY, 
+FullName VARCHAR(150) NOT NULL, 
+Position VARCHAR(100) NOT NULL, 
+ContactNumber VARCHAR(20) NOT NULL, 
+LID INT NOT NULL,
+
+CONSTRAINT FK_Staff_Library
+        FOREIGN KEY (LID)
+        REFERENCES Library(LID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE Book (
+    BID INT IDENTITY(1,1) PRIMARY KEY,
+    ISBN VARCHAR(20) NOT NULL UNIQUE,
+    Title VARCHAR(150) NOT NULL,
+    Genre VARCHAR(20) NOT NULL,
+    Price DECIMAL(10,2) CHECK (Price > 0),
+    AvailabilityStatus BIT DEFAULT 1,
+    ShelfLocation VARCHAR(50) NOT NULL,
+    LID INT NOT NULL,
+
+    CONSTRAINT FK_Book_Library
+        FOREIGN KEY (LID)
+        REFERENCES Library(LID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT CHK_Book_Genre
+        CHECK (Genre IN ('Fiction', 'Non-fiction', 'Reference', 'Children'))
+);
+
+CREATE TABLE Reviews (
+    RID INT IDENTITY(1,1) PRIMARY KEY,
+    Rating INT NOT NULL,
+    Comments VARCHAR(255) DEFAULT 'No comments' NOT NULL,
+    ReviewDate DATE NOT NULL,
+    MID INT NOT NULL,
+    BID INT NOT NULL,
+
+    CONSTRAINT FK_Reviews_Member
+        FOREIGN KEY (MID)
+        REFERENCES Member(MID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT FK_Reviews_Book
+        FOREIGN KEY (BID)
+        REFERENCES Book(BID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT CHK_Review_Rating
+        CHECK (Rating BETWEEN 1 AND 5),
+
+    CONSTRAINT UQ_Review UNIQUE (MID, BID)
+);
+
+CREATE TABLE Loan (
+    LID INT IDENTITY(1,1) PRIMARY KEY,
+    LoanDate DATE NOT NULL,
+    DueDate DATE NOT NULL,
+    ReturnDate DATE NOT NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'Issued',
+    BID INT NOT NULL,
+    MID INT NOT NULL,
+
+    CONSTRAINT FK_Loan_Book
+        FOREIGN KEY (BID)
+        REFERENCES Book(BID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT FK_Loan_Member
+        FOREIGN KEY (MID)
+        REFERENCES Member(MID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT CHK_Loan_Status
+        CHECK (Status IN ('Issued', 'Returned', 'Overdue')),
+
+    CONSTRAINT CHK_ReturnDate
+        CHECK (ReturnDate IS NULL OR ReturnDate >= LoanDate)
+);
+
+CREATE TABLE Payment (
+    PID INT IDENTITY(1,1) PRIMARY KEY,
+    PaymentDate DATE NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL CHECK (Amount > 0),
+    PaymentMethod VARCHAR (50)NOT NULL,
+    LID INT NOT NULL,
+
+    CONSTRAINT FK_Payment_Loan
+        FOREIGN KEY (LID)
+        REFERENCES Loan(LID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+
